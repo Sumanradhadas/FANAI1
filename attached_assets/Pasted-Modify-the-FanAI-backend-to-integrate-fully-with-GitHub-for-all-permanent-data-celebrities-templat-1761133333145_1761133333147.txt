@@ -1,0 +1,158 @@
+Modify the FanAI backend to integrate fully with GitHub for all permanent data (celebrities, templates, user generations).
+Implement the following detailed changes:
+
+🔁 1️⃣ Fetch Celebrities Directly from GitHub
+
+Remove database dependency for celebrity listing and fetching.
+
+Instead, fetch all celebrity JSON data from:
+
+https://raw.githubusercontent.com/{owner}/{repo}/main/celebrities/celebrities.json
+
+
+Each celebrity entry should include:
+
+{
+  "name": "Shah Rukh Khan",
+  "slug": "shah-rukh-khan",
+  "profession": "Actor",
+  "image": "https://raw.githubusercontent.com/{owner}/{repo}/main/celebs/shah-rukh-khan.jpg"
+}
+
+
+Add a 24-hour cache in memory for performance (use node-cache or similar).
+
+Endpoint /api/celebrities and /api/celebrities/:slug should now read directly from GitHub JSON.
+
+🧠 2️⃣ Fetch Templates Directly from GitHub
+
+Same for templates — no more DB.
+
+Fetch from:
+
+https://raw.githubusercontent.com/{owner}/{repo}/main/templates/templates.json
+
+
+Parse and serve via /api/templates and /api/templates/:slug.
+
+Add auto-refresh every 12 hours.
+
+🧑‍💼 3️⃣ Upload New Celebrity via Admin Panel → Push to GitHub
+
+In admin upload flow (POST /api/admin/celebrities):
+
+Accept multipart/form-data with image and JSON body.
+
+Upload image temporarily to /uploads/{hash}.jpg.
+
+Then use GitHub API (via @octokit/rest) to:
+
+Commit image to celebs/{slug}.jpg.
+
+Update or append entry in celebrities/celebrities.json.
+
+Return success + new URL.
+
+Example GitHub commit path:
+
+fan-ai-celebs/celebs/{slug}.jpg
+fan-ai-celebs/celebrities/celebrities.json
+
+📦 4️⃣ Store User Generated Results in GitHub
+
+After generation completes:
+
+Upload processed image (uploads/processed/{id}.png) to GitHub repo:
+
+fan-ai-celebs/users/{userId}/{YYYY-MM-DD}/{generationId}.png
+
+
+Also commit a metadata JSON alongside:
+
+fan-ai-celebs/users/{userId}/{YYYY-MM-DD}/{generationId}.json
+
+
+Example metadata:
+
+{
+  "userId": "abc123",
+  "template": "diwali-celebration",
+  "celeb": "shah-rukh-khan",
+  "timestamp": "2025-10-22T09:00:00Z"
+}
+
+🚀 5️⃣ Auto-Create New Repo If GitHub Limit Reached
+
+In githubClient.ts, add try/catch for upload failures:
+
+If GitHub returns 403 Repo size limit or 422 Validation failed,
+→ Automatically create a new repo using the GitHub API:
+
+POST https://api.github.com/user/repos
+
+
+Repo naming format: fan-ai-celebs-{timestamp}
+
+Update .env variable GITHUB_REPO to new repo name at runtime.
+
+Continue upload automatically.
+
+🔒 6️⃣ Environment Variables (Update .env)
+
+Add:
+
+GITHUB_TOKEN=ghp_your_token_here
+GITHUB_OWNER=Sumanradhadas
+GITHUB_REPO=fan-ai-celebs
+GITHUB_BRANCH=main
+
+🧠 7️⃣ Optional Optimizations
+
+Cache celebrity and template JSON locally for 24 hours to reduce GitHub calls.
+
+Add /api/admin/sync-github endpoint to force-refresh manually.
+
+Show commit success toast in admin panel when pushing new celebs or results.
+
+🧪 Final Verification
+
+Adding a new celeb to GitHub manually → instantly shows on website.
+
+Uploading new celeb in admin → appears in GitHub + shows on site.
+
+User generates image → stored automatically in GitHub under user folder.
+
+If GitHub is full → new repo auto-created and used.
+
+No manual DB syncs required.
+
+🧩 Libraries required:
+
+@octokit/rest → for GitHub commits and repo creation
+
+node-cache → for caching JSON from GitHub
+
+formidable or multer (already present) for uploads
+
+dayjs or date-fns for date folder structure
+
+dotenv for managing env vars
+
+🔐 Bonus – GitHub Folder Layout (After Changes)
+fan-ai-celebs/
+├── celebs/
+│   ├── shah-rukh-khan.jpg
+│   └── alia-bhatt.jpg
+├── celebrities/
+│   └── celebrities.json
+├── templates/
+│   └── templates.json
+└── users/
+    ├── user123/
+    │   └── 2025-10-22/
+    │       ├── gen-abc123.png
+    │       └── gen-abc123.json
+
+
+Would you like me to generate the ready-to-paste code snippets (for githubClient.ts, routes for upload, and auto-create repo logic) next?
+That way you can directly integrate this behavior into your backend.

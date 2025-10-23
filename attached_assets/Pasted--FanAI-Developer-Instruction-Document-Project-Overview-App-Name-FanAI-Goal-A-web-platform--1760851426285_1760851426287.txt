@@ -1,0 +1,246 @@
+🧠 FanAI – Developer Instruction Document
+🔰 Project Overview
+
+App Name: FanAI
+Goal: A web platform where users can create realistic AI-generated photos with their favorite celebrities — for fun, festivals, or campaigns — using Gemini 2.5 Flash / Nano Banana APIs.
+
+Core USP:
+
+Realistic, high-quality images (not cartoon filters).
+
+Search celebrity → select template → upload photo → get AI-generated photo.
+
+Auto margin, cropping, and watermark process.
+
+Campaign plan system for politicians and influencers.
+
+Admin panel to manage everything.
+
+🏗️ Architecture Summary
+Layer	Technology
+Frontend	React + Tailwind CSS
+Backend	Node.js + Express
+AI API	Gemini 2.5 Flash / Nano Banana
+Data Storage	Private GitHub Repo (for celeb faces + templates)
+Auth	Firebase Auth or Replit Auth
+Payment Gateway	Razorpay / Stripe
+Hosting	Replit + Custom Domain (fanai.in)
+🧱 Modules
+1️⃣ User Frontend (React)
+Pages
+Page	Function
+Home Page	Landing page with search bar and pricing plans
+Search Page	User searches for celeb name (simulates Google style)
+Celeb Details Page	Shows celeb info (via Google Search API) and all templates
+Template Page	Displays templates fetched from templates.json
+Upload Page	User uploads photo with popup guide (good vs bad examples)
+Result Page	Shows generated AI image (after cropping + watermark)
+Campaign Page	Personalized campaign link landing page for supporters
+Login / Signup	Firebase / Replit Auth integration
+2️⃣ Backend (Node.js + Express)
+APIs
+Endpoint	Function
+/api/search	Fetch celeb details using Google Search API
+/api/templates	Load templates from GitHub (templates.json)
+/api/generate	Send request to Gemini / Nano Banana with prompt, celeb image, and user image
+/api/admin/*	Protected routes for managing celebs, templates, and campaigns
+/api/payment	Handle plan payments (Razorpay / Stripe)
+/api/user/history	Store and show user generation history
+3️⃣ Gemini / Nano Banana Integration
+Generation Logic
+
+Fetch celeb face (from GitHub private repo)
+
+Get uploaded user image (from form)
+
+Pick selected template prompt from templates.json
+
+Construct prompt:
+
+"Create a realistic photo showing {{user_description}} with {{celeb_name}}, 
+based on {{template_name}} theme. Add a 2-inch white border margin."
+
+
+Send both images + prompt to Gemini/Nano Banana API.
+
+Receive generated image → process:
+
+Crop white border
+
+Add watermark (“FanAI” bottom-right)
+
+Return final image to frontend.
+
+4️⃣ Post-Processing Logic (Server-Side)
+Functions
+Function	Description
+addMargin()	Add 2-inch (≈200px) white border around generated image
+cropMargin()	Detect and crop out the white border cleanly
+addWatermark()	Overlay “FanAI” watermark at 60% opacity (bottom-right)
+finalizeImage()	Save and return final image (Firebase / GitHub storage)
+5️⃣ Database & Storage Design
+Option A — GitHub Private Repo (Recommended)
+
+Structure:
+
+celebs/
+  virat_kohli.jpg
+  modi.jpg
+  apj_abdul_kalam.jpg
+
+templates/
+  templates.json
+  sample_previews/
+    birthday.png
+    diwali.png
+
+
+Access using GitHub API token (private)
+
+Fetch using Base64 decode
+
+Use in backend for generation
+
+Option B — Firebase (Optional)
+
+Use for:
+
+Storing user-generated images
+
+Payment and plan tracking
+
+Auth user data
+
+6️⃣ Template System
+File: templates.json
+
+Stores all prompt templates. Example:
+
+[
+  {
+    "id": "birthday",
+    "name": "Birthday Celebration",
+    "prompt": "User standing beside {{celeb_name}} cutting cake with smiles.",
+    "tags": ["birthday", "celebration"],
+    "sample": "templates/sample_previews/birthday.png"
+  },
+  {
+    "id": "diwali",
+    "name": "Diwali Celebration",
+    "prompt": "User with {{celeb_name}} lighting diyas and lanterns.",
+    "tags": ["festival", "diwali"],
+    "sample": "templates/sample_previews/diwali.png"
+  }
+]
+
+
+Easy to add or edit via Admin Panel.
+
+Applied universally to all celebrities.
+
+7️⃣ Admin Panel (Full Control)
+Login
+
+Firebase / Replit Auth (admin only)
+
+Sections
+Section	Description
+🧑‍🎤 Celeb Manager	Add / edit / remove celebrities, upload face image
+🧩 Template Manager	Manage templates from templates.json
+💳 Payments Manager	View transactions, activate campaign plans
+📈 Analytics	View usage count, active users, campaign metrics
+⚙️ System Settings	Update API keys, GitHub tokens, watermark style
+Special Feature — Campaign Link Generator
+
+Input candidate name → auto-generate link fanai.in/<candidate>
+
+Users generating from this link bypass payment
+
+Analytics: total fan generations per campaign
+
+8️⃣ Payment Gateway
+
+Use Razorpay (preferred for INR) or Stripe.
+
+Plans
+Plan	Price	Limit
+Basic	₹5	1 generation
+Silver	₹50	25 generations
+Gold	₹100	100 generations
+Diamond	₹500	Unlimited
+Campaign	₹10,000	Unlimited + custom link
+Flow
+
+On payment success → add user plan in DB
+
+Deduct usage count per generation (if not unlimited)
+
+9️⃣ Legal & Safety Layer
+
+Add /terms and /privacy routes:
+
+FanAI provides AI tools for fan-generated content.
+All generations are initiated and owned by users.
+FanAI is not responsible for misuse or content liability.
+No celebrity image is publicly hosted; database is private.
+
+🔐 10️⃣ Authentication & Access
+
+Firebase Auth / Replit Auth
+
+Admin and campaign access roles
+
+Tokens stored securely using Replit Secrets Manager
+
+🖼️ 11️⃣ Upload & Validation Popup
+
+Popup text before upload:
+
+“Upload a clear single-person photo. Avoid blurry, cropped, or multiple faces.”
+Show ✅ good and ❌ bad image examples.
+
+🧩 12️⃣ Example Workflow (User Side)
+User opens FanAI →
+Searches “Virat Kohli” →
+Selects “Diwali Celebration” template →
+Uploads clear photo →
+AI generates realistic image (with 2-inch margin) →
+System crops → adds watermark →
+Final image shown → user downloads.
+
+⚙️ 13️⃣ Example Workflow (Admin Side)
+Admin logs in →
+Adds new celeb to GitHub repo →
+Adds new template in JSON →
+Creates campaign link for candidate →
+Tracks daily usage in dashboard.
+
+🌟 14️⃣ Expansion Ideas
+
+Auto captions: “Made with FanAI ❤️”
+
+Festivals: Diwali, Holi, Christmas, Independence Day, New Year
+
+Add AR filters for mobile version
+
+Partner with influencers for engagement boosts
+
+📄 15️⃣ Developer Notes
+
+Store all API keys (Gemini, GitHub, Razorpay) in environment variables.
+
+Watermark images using Node Canvas or Sharp library.
+
+Ensure all celeb images are square, high-quality, face-only.
+
+Replit repo structure suggestion:
+
+/frontend
+/backend
+/data/templates.json
+/utils/imageProcessor.js
+
+
+✅ Goal for Builder (AI Studio / Replit Agent):
+
+Build a full-stack web app (FanAI) where users can search for celebrities, choose templates, upload photos, and generate realistic images using Gemini API — with automatic margin, cropping, watermarking, and private GitHub storage. Include admin dashboard for full control and Razorpay integration for payment.
